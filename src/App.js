@@ -1,32 +1,16 @@
-// KOD Z POPRZEDNIEJ WIADOMOŚCI
-import React, { useState } from 'react';
-// ... (cały kod routera) ...
+import React, from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
-
 import Login from './Login';
 import Navbar from './Navbar';
 import Warehouse from './Warehouse';
 import Clients from './Clients';
 import Orders from './Orders';
-
 function App() {
   const [token, setToken] = useState(localStorage.getItem('authToken'));
-
-  const handleLoginSuccess = (newToken) => {
-    localStorage.setItem('authToken', newToken);
-    setToken(newToken);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    setToken(null);
-  };
-
-  if (!token) {
-    return <Login onLoginSuccess={handleLoginSuccess} />;
-  }
-
+  const handleLoginSuccess = (newToken) => { localStorage.setItem('authToken', newToken); setToken(newToken); };
+  const handleLogout = () => { localStorage.removeItem('authToken'); setToken(null); };
+  if (!token) { return <Login onLoginSuccess={handleLoginSuccess} />; }
   return (
     <Router>
       <div className="App">
@@ -43,5 +27,4 @@ function App() {
     </Router>
   );
 }
-
 export default App;
