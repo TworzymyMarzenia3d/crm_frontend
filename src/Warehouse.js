@@ -2,16 +2,47 @@ import React, { useState, useEffect } from 'react';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
+// Komponent do edycji nazwy kategorii
+function CategoryEditor({ category, token, onSave, onCancel }) {
+    const [name, setName] = useState(category.name);
+
+    const handleSave = async () => {
+        try {
+            const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+            const response = await fetch(`${API_URL}/api/product-categories/${category.id}`, {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify({ name })
+            });
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error);
+            }
+            onSave();
+        } catch (error) {
+            alert(error.message);
+        }
+    };
+    
+    return (
+        <div className="inline-editor">
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+            <button type="button" onClick={handleSave}>Zapisz</button>
+            <button type="button" onClick={onCancel} className="cancel-btn">Anuluj</button>
+        </div>
+    );
+}
+
+// Główny komponent strony Magazyn
 function Warehouse({ token }) {
     const [categories, setCategories] = useState([]);
     const [products, setProducts] = useState([]);
     const [purchases, setPurchases] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Stany dla formularza kategorii
     const [newCategoryName, setNewCategoryName] = useState('');
-
-    // Stany dla formularza dodawania produktu
+    const [editingCategoryId, setEditingCategoryId] = useState(null);
+    
     const [selectedCategoryId, setSelectedCategoryId] = useState('');
     const [productName, setProductName] = useState('');
     const [productUnit, setProductUnit] = useState('');
@@ -19,7 +50,6 @@ function Warehouse({ token }) {
     const [materialType, setMaterialType] = useState('');
     const [color, setColor] = useState('');
     
-    // Stany dla formularza zakupów
     const [purchaseProductId, setPurchaseProductId] = useState('');
     const [purchaseVendor, setPurchaseVendor] = useState('');
     const [purchasePrice, setPurchasePrice] = useState('');
@@ -41,24 +71,20 @@ function Warehouse({ token }) {
             const catsData = await catsRes.json();
             const prodsData = await prodsRes.json();
             const purcsData = await purcsRes.json();
-
             setCategories(catsData);
             setProducts(prodsData);
             setPurchases(purcsData);
-
             if (catsData.length > 0 && !selectedCategoryId) setSelectedCategoryId(catsData[0].id);
+            else if (catsData.length > 0 && !catsData.find(c => c.id === parseInt(selectedCategoryId))) setSelectedCategoryId(catsData[0].id);
             if (prodsData.length > 0 && !purchaseProductId) setPurchaseProductId(prodsData[0].id);
-        } catch (error) {
-            console.error("Failed to fetch data", error);
-        } finally {
-            setIsLoading(false);
-        }
+        } catch (error) { console.error("Failed to fetch data", error); }
+        finally { setIsLoading(false); }
     };
 
     useEffect(() => { fetchData(); }, [token]);
 
     const handleAddCategory = async () => {
-        if (!newCategoryName) return;
+        if (!newCategoryName.trim()) return;
         try {
             const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
             await fetch(`${API_URL}/api/product-categories`, { method: 'POST', headers, body: JSON.stringify({ name: newCategoryName }) });
@@ -80,6 +106,8 @@ function Warehouse({ token }) {
             const response = await fetch(`${API_URL}/api/products`, { method: 'POST', headers, body: JSON.stringify(body) });
             if (!response.ok) { const errData = await response.json(); throw new Error(errData.error); }
             fetchData();
+            // Resetuj odpowiednie pola formularza
+            setProductName(''); setProductUnit(''); setManufacturer(''); setMaterialType(''); setColor('');
         } catch (error) { alert(error.message); }
     };
     
@@ -96,7 +124,7 @@ function Warehouse({ token }) {
                 }),
             });
             fetchData();
-            setPurchasePrice(''); setPurchaseQuantity(''); setPurchaseVendor('');
+            setPurchasePrice(''); setPurchaseQuantity(''); setPurchaseVendor(''); setPurchaseCurrency('PLN'); setExchangeRate('1');
         } catch (err) { alert(err.message); }
     };
 
@@ -104,19 +132,32 @@ function Warehouse({ token }) {
 
     return (
         <>
-            <div className="management-panel">
+            <div className="management-panel" style={{alignItems: 'flex-start'}}>
                 <section className="form-section">
-                    <h2>Dodaj nowy produkt</h2>
+                    <h2>Kategorie</h2>
+                    <div className="add-category-form">
+                        <input type="text" placeholder="Nowa nazwa..." value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} />
+                        <button type="button" onClick={handleAddCategory}>Dodaj</button>
+                    </div>
+                    <ul className="category-list">
+                        {categories.map(cat => (
+                            <li key={cat.id}>
+                                {editingCategoryId === cat.id ? (
+                                    <CategoryEditor category={cat} token={token} onSave={() => { setEditingCategoryId(null); fetchData(); }} onCancel={() => setEditingCategoryId(null)} />
+                                ) : ( <><span>{cat.name}</span><button onClick={() => setEditingCategoryId(cat.id)} className="edit-btn">Edytuj</button></> )}
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+
+                <section className="form-section">
+                    <h2>Dodaj produkt</h2>
                     <form onSubmit={handleAddProduct}>
                         <label>Kategoria</label>
-                        <select value={selectedCategoryId} onChange={e => setSelectedCategoryId(e.target.value)}>
+                        <select value={selectedCategoryId} onChange={e => setSelectedCategoryId(e.target.value)} required>
                             {categories.length === 0 && <option disabled>Najpierw dodaj kategorię</option>}
                             {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
-                        <div className="add-category-form">
-                            <input type="text" placeholder="Nowa kategoria..." value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} />
-                            <button type="button" onClick={handleAddCategory}>Dodaj kat.</button>
-                        </div>
                         
                         {isFilamentCategory ? (
                             <>
@@ -166,26 +207,29 @@ function Warehouse({ token }) {
                     </form>
                 </section>
             </div>
+            
             <section className="list-section full-width">
                 <h2>Stan Magazynowy (Partie Produktów)</h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Produkt</th><th>Ilość (zostało/całość)</th><th>Dostawca</th><th>Data zakupu</th><th>Koszt / jednostkę (PLN)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {purchases.map(p => (
-                            <tr key={p.id}>
-                                <td>{p.product.name}</td>
-                                <td>{p.currentQuantity} / {p.initialQuantity} {p.product.unit}</td>
-                                <td>{p.vendorName || '-'}</td>
-                                <td>{new Date(p.purchaseDate).toLocaleDateString()}</td>
-                                <td>{p.costPerUnitInPLN.toFixed(4)} PLN</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                {isLoading ? <p>Ładowanie...</p> : (
+                    <table>
+                        <thead>
+                            <tr><th>Produkt</th><th>Ilość (zostało/całość)</th><th>Dostawca</th><th>Data zakupu</th><th>Koszt / jednostkę (PLN)</th></tr>
+                        </thead>
+                        <tbody>
+                            {purchases.length === 0 ? (<tr><td colSpan="5">Brak zakupów w bazie.</td></tr>) : (
+                                purchases.map(p => (
+                                    <tr key={p.id}>
+                                        <td>{p.product?.name || 'Błąd danych produktu'}</td>
+                                        <td>{p.currentQuantity} / {p.initialQuantity} {p.product?.unit}</td>
+                                        <td>{p.vendorName || '-'}</td>
+                                        <td>{new Date(p.purchaseDate).toLocaleDateString()}</td>
+                                        <td>{p.costPerUnitInPLN.toFixed(4)} PLN</td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                )}
             </section>
         </>
     );
