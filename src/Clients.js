@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 function Clients({ token }) {
-  // Stany dla listy klientów i formularza
+  // Stany
   const [clients, setClients] = useState([]);
   const [name, setName] = useState('');
   const [nip, setNip] = useState('');
@@ -11,62 +11,42 @@ function Clients({ token }) {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [notes, setNotes] = useState('');
-
-  // Stany pomocnicze
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Funkcja do pobierania listy klientów z API
+  // Pobieranie danych
   const fetchClients = async () => {
     setIsLoading(true);
     try {
       const response = await fetch(`${API_URL}/api/clients`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
-      if (!response.ok) {
-        throw new Error('Nie udało się pobrać listy klientów.');
-      }
+      if (!response.ok) throw new Error('Nie udało się pobrać listy klientów.');
       const data = await response.json();
       setClients(data);
       setError(null);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
+    } catch (err) { setError(err.message); }
+    finally { setIsLoading(false); }
   };
 
-  // Pobierz dane po pierwszym załadowaniu komponentu
-  useEffect(() => {
-    fetchClients();
-  }, [token]);
+  useEffect(() => { fetchClients(); }, [token]);
 
-  // Funkcja do obsługi dodawania nowego klienta
+  // Dodawanie klienta
   const handleAddClient = async (e) => {
     e.preventDefault();
     try {
       const response = await fetch(`${API_URL}/api/clients`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ name, nip, address, phone, email, notes }),
       });
       if (!response.ok) {
-        throw new Error('Nie udało się dodać klienta.');
+          const errData = await response.json();
+          throw new Error(errData.error || 'Nie udało się dodać klienta.');
       }
-      // Po sukcesie odśwież listę i wyczyść formularz
       fetchClients();
-      setName('');
-      setNip('');
-      setAddress('');
-      setPhone('');
-      setEmail('');
-      setNotes('');
-    } catch (err) {
-      alert(err.message);
-    }
+      setName(''); setNip(''); setAddress(''); setPhone(''); setEmail(''); setNotes('');
+    } catch (err) { alert(err.message); }
   };
 
   if (isLoading) return <p>Ładowanie listy klientów...</p>;
@@ -74,28 +54,22 @@ function Clients({ token }) {
 
   return (
     <>
-      <div className="management-panel" style={{alignItems: 'flex-start'}}>
+      <div className="management-panel" style={{alignItems: 'flex-start', maxWidth: '400px'}}>
         <section className="form-section">
           <h2>Dodaj nowego klienta</h2>
           <form onSubmit={handleAddClient}>
             <label>Nazwa klienta / Firma *</label>
             <input type="text" value={name} onChange={(e) => setName(e.target.value)} required />
-            
             <label>NIP</label>
             <input type="text" value={nip} onChange={(e) => setNip(e.target.value)} />
-            
             <label>Adres</label>
             <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} />
-            
             <label>Telefon</label>
             <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} />
-
             <label>Email</label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-            
             <label>Notatki</label>
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows="4"></textarea>
-
             <button type="submit">Dodaj klienta</button>
           </form>
         </section>
@@ -106,12 +80,7 @@ function Clients({ token }) {
         <table>
             <thead>
               <tr>
-                <th>Nazwa</th>
-                <th>NIP</th>
-                <th>Adres</th>
-                <th>Telefon</th>
-                <th>Email</th>
-                <th>Notatki</th>
+                <th>Nazwa</th><th>NIP</th><th>Adres</th><th>Telefon</th><th>Email</th><th>Notatki</th>
               </tr>
             </thead>
             <tbody>
@@ -120,12 +89,8 @@ function Clients({ token }) {
               ) : (
                 clients.map((client) => (
                   <tr key={client.id}>
-                    <td>{client.name}</td>
-                    <td>{client.nip || '-'}</td>
-                    <td>{client.address || '-'}</td>
-                    <td>{client.phone || '-'}</td>
-                    <td>{client.email || '-'}</td>
-                    <td>{client.notes || '-'}</td>
+                    <td>{client.name}</td><td>{client.nip || '-'}</td><td>{client.address || '-'}</td>
+                    <td>{client.phone || '-'}</td><td>{client.email || '-'}</td><td>{client.notes || '-'}</td>
                   </tr>
                 ))
               )}
