@@ -206,3 +206,11 @@ tbody tr:nth-child(odd) {
   width: 80%;
   margin-bottom: 1.5rem;
 }
+
+.currency-wrapper {
+  display: flex;
+  gap: 1rem;
+}
+.currency-wrapper > div {
+  flex: 1;
+}
