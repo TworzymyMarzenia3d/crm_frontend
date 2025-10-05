@@ -231,3 +231,13 @@ tbody tr:nth-child(odd) {
 .inline-editor { display: flex; gap: 0.5rem; width: 100%; }
 .inline-editor input { margin: 0; }
 .inline-editor button { width: auto !important; padding: 10px; font-size: 0.9rem; }
+/* Wyśrodkuj panel, jeśli ma tylko jeden element potomny */
+.management-panel:has(:last-child:first-child) {
+  justify-content: center;
+}
+
+/* Ogranicz szerokość formularza, gdy jest jedynym elementem */
+.management-panel:has(:last-child:first-child) > .form-section {
+  flex-grow: 0;
+  flex-basis: 500px;
+}

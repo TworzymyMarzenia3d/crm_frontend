@@ -55,7 +55,7 @@ function Clients({ token }) {
   return (
     <>
       <div className="management-panel" >
-        <section className="form-section" style={{ flex: '0 1 500px' }}>
+        <section className="form-section">
           <h2>Dodaj nowego klienta</h2>
           <form onSubmit={handleAddClient}>
             <label>Nazwa klienta / Firma *</label>
